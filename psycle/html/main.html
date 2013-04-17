@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <style type="text/css">
+    body {
+      font-family:sans-serif
+    }
+    .main {
+      border:1px solid #000;
+      box-shadow:10px 10px 5px #888;
+      border-radius:12px;
+      padding:20px;
+      background-color:#ddd;
+      margin:25px;
+      width:450px;
+      margin-left:auto;
+      margin-right:auto
+    }
+    .logo {
+      margin-left:auto;
+      margin-right:auto;
+      display:block;
+      padding:15px
+    }
+    .container {
+      -webkit-perspective:300;
+      perspective:300
+    }
+  </style>
+  <script type="text/javascript">//<![CDATA[ 
+		
+    var controllerId = "{CONTROLLER_ID}"
+		
+    window.onload = function() {
+      buildGrid();			
+      registerMovementEventListener();
+
+      function checkDeviceOrientationEvent() {
+        if (window.DeviceOrientationEvent) {					
+          return true;
+        }
+        return false;
+      }
+
+      function registerMovementEventListener() {
+        if (checkDeviceOrientationEvent()) {					
+          window.addEventListener('deviceorientation', deviceOrientationCallback);
+        }	else {
+          document.getElementById("doEvent").innerHTML = "Not supported on your device or browser.  Sorry."
+        }
+      }
+
+      function deviceOrientationCallback (eventData) {        
+        var tiltLR = eventData.gamma;
+        var tiltFB = eventData.beta;
+        var dir = eventData.alpha;
+        var motUD = null;
+        deviceOrientationHandler(tiltLR, tiltFB, dir, motUD);				
+      }
+
+      function deviceOrientationHandler(tiltLR, tiltFB, dir, motionUD) {
+        ajaxData = {
+          "tiltLR": Math.round(tiltLR),
+          "tiltFB": Math.round(tiltFB),
+          "motionUD": Math.round(motionUD),
+          "dir": Math.round(dir),
+          "controllerId": controllerId
+        };
+        
+        doAjaxRequest('/?_action=sendData', ajaxData, 'POST', testCallback);
+        
+        document.getElementById("doTiltLR").innerHTML = Math.round(tiltLR);
+        document.getElementById("doTiltFB").innerHTML = Math.round(tiltFB);
+        document.getElementById("doDirection").innerHTML = Math.round(dir);				
+        document.getElementById("imgLogo").style.webkitTransform = "rotate3d(0,1,0, " + (tiltLR * -1) + "deg)rotate3d(1,0,0, " + (tiltFB * -1) + "deg)";
+      }
+      
+      function piServerCallback(args, args2) {
+        console.log(args2);
+      }
+      
+      function doAjaxRequest(url, data, type, piServerCallback) {
+        type = undefined == type ? 'GET' : type;
+        data = undefined == data ? {} : data;
+        
+        xmlhttp = new XMLHttpRequest();
+        xmlhttp.open(type, url);
+        
+        serializedAjaxData = serialize(data);	
+        xmlhttp.send(serializedAjaxData);
+        
+        xmlhttp.onreadystatechange=function()
+        {
+          if (xmlhttp.readyState==4 && xmlhttp.status==200)
+          {
+            if(undefined != successCallback)
+            {             
+              successCallback(xmlhttp.responseXML, xmlhttp.responseText);
+            }
+          }
+        }
+        
+        return xmlhttp;
+      }
+
+      serialize = function(obj) {
+        var str = [];
+        for (var p in obj)
+          str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+        return str.join("&");
+      }
+    }//]]>  
+  </script>
+</head>
+<body>
+  <div class="main">
+    <h2>Device Orientation</h2>
+
+    <table>
+      <tr>
+        <td>Tilt Left/Right [tiltLR]</td>
+        <td id="doTiltLR"></td>
+      </tr>
+      <tr>
+        <td>Tilt Front/Back [tiltFB]</td>
+        <td id="doTiltFB"></td>
+      </tr>
+      <tr>
+        <td>Direction [direction]</td>
+        <td id="doDirection"></td>
+      </tr>
+    </table>
+  </div>
+  <div class="container" id="container" style="-webkit-perspective: 600; perspective: 600;">
+
+  </div>
+  <script type="text/javascript">
+    //<![CDATA[ 
+    
+    /**
+     * Draw grid on canvas
+     * @returns {undefined}
+     */
+    buildGrid = function () {
+      //grid width and height
+      var bw = 600;
+      var bh = 600;
+      //padding around grid
+      var p = 10;
+      //size of canvas
+      var cw = bw + (p * 2) + 1;
+      var ch = bh + (p * 2) + 1;
+
+      //var canvas = $('<canvas/>').attr({width: cw, height: ch}).appendTo('body');
+      var canvasContainer = document.createElement('div');
+			
+      canvasContainer.style.display = 'block';
+      canvasContainer.style.width = cw + 'px';
+      canvasContainer.style.height = ch + 'px';	
+      canvasContainer.style.position = 'relative';
+      canvasContainer.style.webkitTransformStyle = 'preserve-3d';
+      //canvasContainer.id = "imgLogo";
+      canvasContainer.className = "logo"
+			
+      var canvas = document.createElement('canvas');
+      canvas.id = "imgLogo";
+      canvas.width = cw;
+      canvas.height = ch;	
+      canvas.style.position = 'absolute';
+      canvas.style.top = 0;
+      canvas.style.left = 0;
+      canvasContainer.appendChild(canvas);
+      context = canvas.getContext("2d");
+      drawBoard(context, 'red');
+			
+      document.getElementById('container').appendChild(canvasContainer);
+			
+	
+      
+      var canvas = document.createElement('canvas');
+      canvas.width = cw;
+      canvas.height = ch;	
+      canvas.style.position = 'absolute';
+      canvas.style.top = 0;
+      canvas.style.left = 0;      
+      canvasContainer.appendChild(canvas);
+      context = canvas.getContext("2d");
+      drawBoard(context, '#cccccc', 30);
+      
+      
+
+      function drawBoard(context, colour, cellSize) {
+        cellSize = undefined == cellSize ? 60 : cellSize;
+        for (var x = 0; x <= bw; x += cellSize) {
+          context.moveTo(0.5 + x + p, p);
+          context.lineTo(0.5 + x + p, bh + p);
+        }
+
+
+        for (var x = 0; x <= bh; x += cellSize) {
+          context.moveTo(p, 0.5 + x + p);
+          context.lineTo(bw + p, 0.5 + x + p);
+        }
+        colour = undefined == colour ? 'black' : colour;
+        context.strokeStyle = colour;
+        context.stroke();
+      }
+			
+    }
+    //]]>
+  </script>
+</body>
+</html>

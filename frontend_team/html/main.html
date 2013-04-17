@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style type="text/css">
+      body {
+        font-family:sans-serif
+      }
+      .main {
+        border:1px solid #000;
+        box-shadow:10px 10px 5px #888;
+        border-radius:12px;
+        padding:20px;
+        background-color:#ddd;
+        margin:25px;
+        width:450px;
+        margin-left:auto;
+        margin-right:auto
+      }
+      .logo {
+        margin-left:auto;
+        margin-right:auto;
+        display:block;
+        padding:15px
+      }
+      .container {
+        -webkit-perspective:300;
+        perspective:300
+      }
+    </style>
+    <script type="text/javascript">
+      //<![CDATA[
+      window.onload = function() {
+        /**
+         * The buildGrid() function will display a grid on our page.
+         * We will use the grid to display a 
+         * visual representation of the defice tilt
+         */
+        buildGrid(); 
+	registerMovementEventListener();
+	
+        
+        /**
+         * We need to attach an event listener to the deviceorientation event on the "window" object
+         * Event listeners are attached as follows:
+         * 
+         * window.addEventListener([EVENT_NAME], [LISTENER_FUNCTION]);        
+         * 
+         * The function passed as the second argument will be called whenever the event is triggered.
+         */
+        function registerMovementEventListener() {
+          /**
+           *  We need to call checkDeviceOrientationEvent before attaching the event listener and 
+           *  display a warning message if the event is not available. If the check returns true we can go ahead
+           *  and attach the listener.
+           */
+		if (checkDeviceOrientationEvent()) {					
+		          window.addEventListener('deviceorientation', deviceOrientationCallback);
+		}	else {
+		          document.getElementById("doEvent").innerHTML = "Not supported on your device or browser.  Sorry."
+        	}
+        }
+        
+        /**
+         * This function will be used to check if the browser is capable of triggering the "DeviceOrientationEvent"
+         * We need to return true or false depending on the result. We need to pass the event parameters to the
+         * deviceOrientationHandler afterwards which is where we want the bulk of the data handling to be carried out.
+         */
+        function checkDeviceOrientationEvent(eventData) {
+          var tiltLR   = eventData.gamma;
+          var dir      = eventData.alpha;
+          var tiltFB   = eventData.beta;
+	  var motionUD = null;
+	  deviceOrientationHandler(tiltLR, tiltFB, dir, motionUD); 
+        }
+        
+        /**
+         * This function will be used to deal with data passed from the checkDeviceOrientationEvent callback function
+         */
+        function deviceOrientationHandler(tiltLR, tiltFB, dir, motionUD) {
+          /**
+           * Make any necessary changes to the html to visualise the orientation change.
+           * 
+           * 1. We need to update the doTiltLR, doTiltFB, doDirection elements with the data recieved from the event.
+           * 2. We need to perform a css 3d transform on the imgLogo element. This uses the webkitTransform style
+           *    where we use the rotate3d(x,y,z, [transformDegrees]deg)  css function
+           */
+   	document.getElementById("doTiltLR").innerHTML = Math.round(tiltLR);
+        document.getElementById("doTiltFB").innerHTML = Math.round(tiltFB);
+        document.getElementById("doDirection").innerHTML = Math.round(dir);				
+        document.getElementById("imgLogo").style.webkitTransform = "rotate3d(0,1,0, " + (tiltLR * -1) + "deg)rotate3d(1,0,0, " + (tiltFB * -1) + "deg)";
+ 
+          // Pass the orientation data to the nodeJS server using an AJAX call
+        }
+        
+        function doAjaxRequest(url, data, type, successCallback) {
+          // Handle undefined arguments
+          type = undefined == type ? 'GET' : type;
+          data = undefined == data ? {} : data;
+          
+          // get new instance of XMLHttpRequest;
+          
+          // Open url using the XMLHttpRequest.open method
+          
+          // serialize data before passing to ajax send method
+          
+          // Call send method on XMLHttpRequest object passing serialized data as argument
+          
+          /**
+           * Handle the data returned from the ajax request using a callback function passed as a fourth argument
+           * Ready state values are as follows:
+           * 
+           *  0: request not initialized 
+           *  1: server connection established
+           *  2: request received 
+           *  3: processing request 
+           *  4: request finished and response is ready
+           *  
+           *  xmlhttp.status is a http status code. See http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+           *  
+           *  This can be implemented as follows:
+           *  
+           *  xmlhttp.onreadystatechange=function()
+           *  {
+           *    if (xmlhttp.readyState==4 && xmlhttp.status==200)
+           *    { 
+           *      if(undefined != successCallback)
+           *      {             
+           *        successCallback(xmlhttp.responseXML, xmlhttp.responseText);
+           *      }
+           *    }
+           *  }
+           */
+          
+        }
+        
+        /**
+         *  This function allows us to change a javascript object into a querystring that can be
+         *  used in any AJAX calls to pass parameters.
+         */
+        function serialize(obj) {
+          var str = [];
+          for (var p in obj)
+            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+          return str.join("&");
+        }
+      }
+      //]]>
+    </script>
+  </head>
+  <body>
+    <div class="main">
+      <h2>Device Orientation</h2>
+
+      <table>
+        <tr>
+          <td>Tilt Left/Right [tiltLR]</td>
+          <td id="doTiltLR"></td>
+        </tr>
+        <tr>
+          <td>Tilt Front/Back [tiltFB]</td>
+          <td id="doTiltFB"></td>
+        </tr>
+        <tr>
+          <td>Direction [direction]</td>
+          <td id="doDirection"></td>
+        </tr>
+      </table>
+    </div>
+    <div class="container" id="container" style="-webkit-perspective: 600; perspective: 600;"></div>
+
+    <script type="text/javascript">
+      //<![CDATA[ 
+    
+      /**
+       * Draw grid on canvas
+       * @returns {undefined}
+       */
+      buildGrid = function () {
+        //grid width and height
+        var bw = 600;
+        var bh = 600;
+        //padding around grid
+        var p = 10;
+        //size of canvas
+        var cw = bw + (p * 2) + 1;
+        var ch = bh + (p * 2) + 1;
+
+        //var canvas = $('<canvas/>').attr({width: cw, height: ch}).appendTo('body');
+        var canvasContainer = document.createElement('div');
+			
+        canvasContainer.style.display = 'block';
+        canvasContainer.style.width = cw + 'px';
+        canvasContainer.style.height = ch + 'px';	
+        canvasContainer.style.position = 'relative';
+        canvasContainer.style.webkitTransformStyle = 'preserve-3d';
+        //canvasContainer.id = "imgLogo";
+        canvasContainer.className = "logo"
+			
+        var canvas = document.createElement('canvas');
+        canvas.id = "imgLogo";
+        canvas.width = cw;
+        canvas.height = ch;	
+        canvas.style.position = 'absolute';
+        canvas.style.top = 0;
+        canvas.style.left = 0;
+        canvasContainer.appendChild(canvas);
+        context = canvas.getContext("2d");
+        drawBoard(context, 'red');
+			
+        document.getElementById('container').appendChild(canvasContainer);
+			
+	
+      
+        var canvas = document.createElement('canvas');
+        canvas.width = cw;
+        canvas.height = ch;	
+        canvas.style.position = 'absolute';
+        canvas.style.top = 0;
+        canvas.style.left = 0;      
+        canvasContainer.appendChild(canvas);
+        context = canvas.getContext("2d");
+        drawBoard(context, '#cccccc', 30);
+      
+      
+
+        function drawBoard(context, colour, cellSize) {
+          cellSize = undefined == cellSize ? 60 : cellSize;
+          for (var x = 0; x <= bw; x += cellSize) {
+            context.moveTo(0.5 + x + p, p);
+            context.lineTo(0.5 + x + p, bh + p);
+          }
+
+
+          for (var x = 0; x <= bh; x += cellSize) {
+            context.moveTo(p, 0.5 + x + p);
+            context.lineTo(bw + p, 0.5 + x + p);
+          }
+          colour = undefined == colour ? 'black' : colour;
+          context.strokeStyle = colour;
+          context.stroke();
+        }
+			
+      }
+      //]]>
+    </script>
+  </body>
+</html>
