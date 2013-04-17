@@ -67,7 +67,7 @@
           "controllerId": controllerId
         };
         
-        doAjaxRequest('/?_action=sendData', ajaxData, 'POST', testCallback);
+        doAjaxRequest('/?_action=sendData', ajaxData, 'POST', piServerCallback);
         
         document.getElementById("doTiltLR").innerHTML = Math.round(tiltLR);
         document.getElementById("doTiltFB").innerHTML = Math.round(tiltFB);
@@ -103,6 +103,11 @@
         return xmlhttp;
       }
 
+	function successCallback(responseXML, responseText)
+	{
+		// do nothing
+	}
+	
       serialize = function(obj) {
         var str = [];
         for (var p in obj)
